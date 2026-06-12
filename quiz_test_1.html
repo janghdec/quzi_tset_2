@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>개인정보 보호 평가</title>
+
+<style>
+body {
+  font-family: Arial;
+  padding: 20px;
+  background: #f9f9f9;
+}
+
+h1 {
+  color: #333;
+}
+
+.question {
+  background: white;
+  padding: 15px;
+  margin-bottom: 15px;
+  border-radius: 8px;
+}
+
+.result {
+  font-size: 20px;
+  margin-top: 20px;
+  font-weight: bold;
+}
+
+.explanation {
+  display: none;
+  margin-top: 8px;
+}
+
+.correct {
+  color: green;
+}
+
+.wrong {
+  color: red;
+}
+
+button {
+  padding: 10px 20px;
+  font-size: 16px;
+  margin-top: 10px;
+}
+</style>
+</head>
+
+<body>
+
+<h1>📋 개인정보 보호 평가</h1>
+
+<form id="quizForm">
+이름: <input type="text" id="username" placeholder="이름 입력"><br><br>
+
+<div id="questions"></div>
+
+<button type="button" onclick="checkAnswers()">제출</button>
+</form>
+
+<div id="result" class="result"></div>
+
+<br>
+<button onclick="showResults()">📊 이전 결과 보기</button>
+<div id="savedResults"></div>
+
+<script>
+
+// 📌 문제 + 정답 + 해설
+const quiz = [
+{ q:"개인정보 보호는 경영성과와 직접적인 관련이 없다.", a:"X", e:"기업 신뢰와 경쟁력에 직접 영향" },
+{ q:"개인정보 자기결정권은 정보주체가 정보 활용을 통제하는 권리이다.", a:"O", e:"개인정보 보호 핵심 개념" },
+{ q:"형식적인 승인만 있으면 자동화 의사결정이 아니다.", a:"X", e:"실질 개입 없으면 자동화로 판단" },
+{ q:"개인정보 유출은 외부 해킹만이 원인이다.", a:"X", e:"내부 관리 미흡도 주요 원인" },
+{ q:"유출된 개인정보는 회수 및 삭제가 가능하다.", a:"X", e:"유출 후 회수 불가능" },
+{ q:"맞춤형 서비스는 적법 범위 내에서 허용된다.", a:"O", e:"동의 및 목적 범위 중요" },
+{ q:"개인정보 보호 책임은 IT부서에만 있다.", a:"X", e:"전사 책임" },
+{ q:"개인정보 침해는 수집 단계에서만 발생한다.", a:"X", e:"전 생명주기 위험 존재" },
+{ q:"AI·IoT 환경에서는 보호 강화가 필요하다.", a:"O", e:"데이터 증가로 통제 필요" },
+{ q:"개인정보 유출 피해는 단기적이다.", a:"X", e:"장기적 피해 발생 가능" },
+{ q:"기존 데이터는 목적 변경 없이 활용 가능하다.", a:"X", e:"목적 외 이용 금지" },
+{ q:"사고는 내부 조사 후 신고하는 것이 바람직하다.", a:"X", e:"신속 신고가 중요" },
+{ q:"데이터 활용 확대를 위해 리스크 감수는 바람직하다.", a:"X", e:"균형 전략 필요" },
+{ q:"개인정보 보호는 실무에 위임하면 된다.", a:"X", e:"경영진 책임 중요" },
+{ q:"개인정보 실패는 기업 평판에 영향을 준다.", a:"O", e:"기업 가치 영향" }
+];
+
+// ✅ 문제 출력
+const container = document.getElementById("questions");
+
+quiz.forEach((item, index) => {
+  const div = document.createElement("div");
+  div.classList.add("question");
+
+  div.innerHTML = `
+    <p><b>${index + 1}. ${item.q}</b></p>
+    <label><input type="radio" name="q${index}" value="O"> O</label>
+    <label><input type="radio" name="q${index}" value="X"> X</label>
+    <div class="explanation" id="exp${index}"></div>
+  `;
+
+  container.appendChild(div);
+});
+
+// ✅ 채점 + 해설
+function checkAnswers() {
+
+  let score = 0;
+  let username = document.getElementById("username").value || "익명";
+
+  quiz.forEach((item, index) => {
+    const selected = document.querySelector(`input[name="q${index}"]:checked`);
+    const expDiv = document.getElementById(`exp${index}`);
+
+    expDiv.style.display = "block";
+
+    if (selected) {
+      if (selected.value === item.a) {
+        score++;
+        expDiv.innerHTML = "✅ 정답 (" + item.e + ")";
+        expDiv.className = "explanation correct";
+      } else {
+        expDiv.innerHTML = "❌ 오답 → 정답: " + item.a + " (" + item.e + ")";
+        expDiv.className = "explanation wrong";
+      }
+    } else {
+      expDiv.innerHTML = "⚠ 선택하지 않음";
+      expDiv.className = "explanation wrong";
+    }
+  });
+
+  let percent = Math.round(score / quiz.length * 100);
+
+  document.getElementById("result").innerHTML =
+    `🎯 ${username}님의 점수: ${score} / ${quiz.length} (${percent}점)`;
+
+  // ✅ 결과 저장
+  let results = JSON.parse(localStorage.getItem("quizResults") || "[]");
+
+  results.push({
+    name: username,
+    score: score,
+    percent: percent,
+    date: new Date().toLocaleString()
+  });
+
+  localStorage.setItem("quizResults", JSON.stringify(results));
+}
+
+// ✅ 저장된 결과 보기
+function showResults() {
+  let data = JSON.parse(localStorage.getItem("quizResults") || "[]");
+  let html = "<h3>📊 저장된 결과</h3>";
+
+  data.forEach(r => {
+    html += `${r.date} - ${r.name}: ${r.score}점 (${r.percent}점)<br>`;
+  });
+
+  document.getElementById("savedResults").innerHTML = html;
+}
+
+</script>
+
+</body>
+</html>
